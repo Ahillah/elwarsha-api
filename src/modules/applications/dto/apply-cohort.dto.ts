@@ -8,22 +8,22 @@ import {
   Length,
   Matches,
   MinLength,
+  IsIn
 } from "class-validator";
 
-export enum CurrentStatus {
-  Student = "student",
-  Graduate = "graduate",
-  WorkingInTech = "working in tech",
-  SwitchingCareer = "switching career",
-  Other = "other",
-}
 
-export enum GitExperience {
-  Never = "never",
-  BasicsOnly = "basics only",
-  Comfortable = "comfortable",
-}
-
+export const CurrentStatus = {
+  Student: "student",
+  Graduate: "recent_graduate",
+  WorkingInTech: "employed_tech",
+  SwitchingCareer: "career_switcher",
+  Other: "other",
+} as const;
+export const GitExperience = {
+  Never: "none",
+  BasicsOnly: "basics",
+  Comfortable: "comfortable",
+} as const;
 export class ApplyCohortDto {
   @IsString({ message: "Full name must be text" })
   @Length(3, 100, {
@@ -57,10 +57,10 @@ export class ApplyCohortDto {
   discordHandle: string;
 
   @IsNotEmpty({ message: "Please select your current status" })
-  @IsEnum(CurrentStatus, {
+  @IsIn(Object.values(CurrentStatus), {
     message: "Select a valid current status",
   })
-  currentStatus: CurrentStatus;
+  currentStatus: (typeof CurrentStatus)[keyof typeof CurrentStatus];
 
   @IsNotEmpty({ message: "College major is required" })
   @IsString({ message: "College major must be text" })
@@ -75,10 +75,11 @@ export class ApplyCohortDto {
   technologies: string;
 
   @IsNotEmpty({ message: "Please select your Git experience level" })
-  @IsEnum(GitExperience, {
-    message: "Select a valid Git experience level",
+
+  @IsIn(Object.values(GitExperience), {
+    message: "Select a valid GitExperience experience level",
   })
-  gitExperience: GitExperience;
+  GitExperience: (typeof GitExperience)[keyof typeof GitExperience];
 
   @IsNotEmpty({ message: "Personal page URL is required" })
   @IsUrl(
