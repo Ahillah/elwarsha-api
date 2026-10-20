@@ -760,44 +760,355 @@ The backend sends a clear JSON response listing every invalid field:
     },
     5: {
       weekNumber: 5,
-      title: "Safe Schema Migrations & Zero-Downtime Data Evolution",
-      tagline: "Evolving production schemas requires disciplined expand-and-contract steps",
-      concept: "Database migrations",
-      guidingQuestion: "How do we migrate a busy production table without taking the service down?",
+      title: "Identity, Authorization & Secure Autonomy",
+      tagline: "Sign-in proves who you are; membership decides what you can touch",
+      concept: "Authentication, authorization & trust boundaries",
+      guidingQuestion: "Where are the trust boundaries for users, services, and coding agents?",
       bigIdea:
-        "In production environments, columns cannot simply be dropped or renamed in a single step without breaking active clients. We implement the Expand-and-Contract migration pattern in Prisma and PostgreSQL to evolve relational schemas seamlessly.",
+        "In Week 3 you built Projects and project members. This week you add **sign-in** and protect that project data. Only signed-in users can reach projects, and only **members** of a project can see or change it.\n\n1. **Authentication:** every project route requires a valid session carried in an HttpOnly cookie. No session → **401**.\n2. **Authorization:** membership is checked in a guard or service, never in the controller. Non-members get one documented answer (**403** or **404**) everywhere.\n3. **Browser security:** CSRF protection on every state-changing route and a CORS allowlist for the frontend origin only.\n4. **Frontend:** an auth context loaded from `/me`, protected routes, and signed-out / denied screens. The frontend never reads or stores the session token. Hiding a button is UX, not security — **the backend enforces** the rule.\n5. **Secure autonomy:** run Semgrep, fix a seeded authorization flaw with a regression test, and keep secrets and production access out of the AI agent's reach.",
       outcomes: [
-        "Write backward-compatible database migrations in Prisma.",
-        "Decouple dual-write and dual-read phases during entity schema evolutions.",
+        "Require a valid session on every project route and return 401 when it is missing.",
+        "Enforce project membership in a guard or service and apply one disclosure policy (403 or 404) on every protected route.",
+        "Configure the session cookie as HttpOnly, Secure, with an explicit and justified SameSite value.",
+        "Protect every POST, PATCH, PUT, and DELETE route against CSRF and allow only the frontend origin through CORS.",
+        "Build an auth context, sign-in form, and protected routes that never read or store the session token.",
+        "Announce request states through a live region and move focus to the error when a request fails.",
+        "Find and fix a seeded authorization flaw with Semgrep, add a regression test, and triage the remaining findings.",
       ],
-      coreConcepts: ["Expand and Contract pattern", "Zero-downtime database migrations"],
+      coreConcepts: [
+        "Authentication vs authorization",
+        "Session cookies (HttpOnly, Secure, SameSite)",
+        "Broken Object Level Authorization (OWASP API1:2023)",
+        "Disclosure policy: 403 vs 404",
+        "CSRF and CORS",
+        "Protected routes and auth context in React",
+        "Accessible request states (live regions & focus management)",
+        "Static analysis and finding triage (Semgrep)",
+        "AI agent permissions and sandboxing",
+      ],
       appliedThroughTheStack: [
-        { layer: "Prisma", details: "Careful schema migrations without destructive column drops." },
-        { layer: "PostgreSQL", details: "Safe indexing and non-blocking constraints." },
+        {
+          layer: "NestJS",
+          details:
+            "AuthGuard on every project route and a membership guard or service check on project and task operations.",
+        },
+        {
+          layer: "HTTP",
+          details:
+            "HttpOnly + Secure + explicit SameSite session cookie, CSRF protection on state-changing routes, and a CORS allowlist with credentials.",
+        },
+        {
+          layer: "React",
+          details:
+            "Auth context from GET /api/v1/auth/me, sign-in form (React Hook Form + Zod), protected project routes, and signed-out / denied screens.",
+        },
+        {
+          layer: "Security tooling",
+          details: "Semgrep scan, one seeded authorization flaw fixed with a regression test, and triaged findings.",
+        },
       ],
       assignment: {
-        title: "Expand and Contract Schema Migration",
-        summary: "Migrate database schema with non-breaking expand, dual-write, and contract phases.",
-        detailsMd: `### Deliverables
-- **Expand Migration**: Add nullable column to Prisma schema.
-- **Dual-write**: Service writes to both old and new columns.`,
+        title: "Sign-in & Project Membership Authorization",
+        summary:
+          "Add sign-in, protect the Week 3 project routes with sessions and membership checks, harden cookies, CSRF, and CORS, and fix a seeded authorization flaw found with Semgrep.",
+        detailsMd: `### Week 5 Assignment: Identity, Authorization & Secure Autonomy
+
+Ticket: [Week 5 gist](https://gist.github.com/Ahmad-Elsayed/eb6c14748c213e85689e1a6c1c535c22)
+
+#### Shared access policy
+
+Frontend and backend follow the **same policy**. Write the final choice in both PRs.
+
+| Situation | API response | UI screen |
+| --- | --- | --- |
+| Not signed in | **401** Unauthorized | Signed-out screen |
+| Signed in, not a member of the project | **403** Forbidden *or* **404** (hide that it exists) — pick one | Denied / not found screen |
+| Signed in, member | 200 | The page |
+
+Pick 403 or 404 once and use it on **every** protected project route.
+
+#### 1. Frontend (\`elwarsha-web\`)
+
+**Required tools:** React Context, React Router, TanStack Query v5, React Hook Form + Zod, Vitest + Testing Library.
+
+Send every request **with credentials** (cookies). The frontend **never reads or stores the session token** — no \`localStorage\`, no \`sessionStorage\`, no token in state. Hiding a button is UX, not security.
+
+- **Sign in — \`/:locale/sign-in/\`**
+  - Fields: email, password.
+  - Validation with Zod (required, valid email).
+  - States: field errors, pending, generic error ("Email or password is incorrect" — never say which one), success (go back to the page the user wanted).
+- **Auth context**
+  - Load the current user from \`GET /api/v1/auth/me\`.
+  - Expose: signed-in user, loading, signed out.
+  - Show the user's name and a **Sign out** button in the header. Sign out calls \`POST /api/v1/auth/logout\`, clears the context, and goes to the home page.
+- **Protected project routes** — \`/:locale/projects/\`, \`/:locale/projects/new/\`, \`/:locale/projects/:id/\`
+  - Signed out → **Signed-out screen** with a "Sign in" button.
+  - Not a member → **Denied screen** (or not-found screen, following the shared policy).
+- Build every screen in Arabic (RTL) and English (LTR).
+- **Accessibility:** request states are announced through a **live region** (\`role="status"\` / \`role="alert"\`), and **focus moves to the error** when a request fails.
+- **Test:** one test proving the **denied state** renders when the API says the user is not allowed.
+
+#### 2. Backend (\`elwarsha-api\`)
+
+**Required tools:** NestJS Guards, cookie-parser, CSRF protection (\`csrf-csrf\` or a documented alternative), NestJS CORS, Zod, Semgrep, Vitest + supertest.
+
+The starter already has \`AuthGuard\`, session cookies, and \`/api/v1/auth/me\` in \`src/modules/identity\`. Build on them; do not make a second auth system.
+
+1. **Authentication** — every project route requires a valid session. No session → **401**.
+2. **Membership authorization** — check that the signed-in user is a **member** of the project on every project operation (list, detail, create, members) and at least **one task** operation. The list only returns projects the user is a member of. Put the check in a guard or service, not in the controller.
+3. **Disclosure policy** — return 403 or 404 for non-members, following the shared policy. Same answer everywhere.
+4. **Session cookie** — \`HttpOnly\`, \`Secure\`, and an explicit \`SameSite\` value. Explain your \`SameSite\` choice.
+5. **CSRF** — protect every \`POST\`, \`PATCH\`, \`PUT\`, \`DELETE\`. Document the defense you chose.
+6. **CORS** — allow only the frontend origin, with credentials. No wildcard (\`*\`).
+7. **Semgrep** — run it, fix **one seeded authorization flaw**, and add a regression test. Triage the other findings: mark each one valid or false positive, and justify false positives.
+8. **Endpoints**
+
+| Method | Path | Purpose | Errors |
+| --- | --- | --- | --- |
+| GET | \`/api/v1/auth/me\` | Current user | 401 signed out |
+| POST | \`/api/v1/auth/logout\` | End the session | 403 CSRF failed |
+| GET | \`/api/v1/projects\` | Projects the user belongs to | 401 |
+| POST | \`/api/v1/projects\` | Create a project | 401 · 403 CSRF failed |
+| GET | \`/api/v1/projects/:id\` | Project detail | 401 · 403 / 404 not a member |
+
+Errors use the problem-details format from Week 2. Never put secrets or stack traces in error messages.
+
+- **Test:** one failure-path test proving a **non-member is denied** according to the disclosure policy.
+
+#### 3. Verification Bar
+- Run \`yarn test\` and \`yarn build\` in \`elwarsha-web\`.
+- Run \`yarn validate\` and \`yarn validate:ci\` in \`elwarsha-api\` (needs local Postgres: \`docker compose up -d\`).
+
+#### Done when
+- [ ] Signed-out requests get **401**; non-members get the documented **403 or 404**, the same on API and UI.
+- [ ] Membership is checked on every protected project operation and one task operation.
+- [ ] Session cookie is \`HttpOnly\`, \`Secure\`, and explicit \`SameSite\`.
+- [ ] State-changing routes are CSRF-safe and the defense is documented.
+- [ ] CORS allows only the frontend origin with credentials; no wildcard.
+- [ ] The frontend never reads or stores the session token.
+- [ ] One Semgrep flaw is fixed with a regression test; other findings are triaged.
+- [ ] Request states use a live region and focus moves to the error.
+- [ ] No secrets in the code or in the AI agent's context; the agent has no production access.
+
+**Optional:** ownership checks on all task operations, and the second seeded flaw fixed with a regression test.
+
+> **Note while watching:** some videos keep the token in \`localStorage\` or in React state. In this project the session lives in an **HttpOnly cookie** set by the API, and the frontend **never reads or stores the token**. Learn the ideas, but follow this week's rules. Login with Google is extra; it is not part of this week's deliverable.`,
       },
       resources: {
         required: [
           {
-            title: "Zero-downtime database migrations guide",
-            url: "https://www.prisma.io/dataguide/types/relational/zero-downtime-migrations",
-            layers: "Database",
+            title: "JWT simply: Authentication vs Authorization & sessions (Arabic) — Bak Tech",
+            url: "https://www.youtube.com/watch?v=wDwA7ihoOlc",
+            layers: "Concept",
+            format: "Watch",
+            time: "—",
+            why: "Step 1: the difference between authentication, authorization, sessions, and JWT.",
+          },
+          {
+            title: "Cookies vs Sessions (Arabic) — أكاديمية ترميز",
+            url: "https://www.youtube.com/watch?v=hUQPu-RWJ_U",
+            layers: "Concept",
+            format: "Watch",
+            time: "—",
+            why: "Step 2: how cookies and server sessions work together.",
+          },
+          {
+            title: "CSRF vulnerability with no defenses (Arabic) — Root Academy",
+            url: "https://www.youtube.com/watch?v=rYNeQUMcdIs&list=PLfnsjJ3BcOKw3YYXxmisNo0S-KUem4zlH",
+            layers: "Concept",
+            format: "Watch",
+            time: "—",
+            why: "Step 3: how a CSRF attack works and why state-changing routes need protection.",
+          },
+          {
+            title: "React Protected Routes, videos 91–93 (Arabic) — Nageeb Darwish",
+            url: "https://www.youtube.com/watch?v=cjTE0IayYPg&list=PLpr1Lg_f0v3ojNKR4WzZ_SEXhiKBHDQmB&index=91",
+            layers: "Frontend",
+            format: "Watch",
+            time: "—",
+            why: "Step 4: guarding routes in React Router and redirecting after sign-in.",
+          },
+          {
+            title: "Authentication in React with JWTs, Access & Refresh Tokens — Cosden Solutions",
+            url: "https://www.youtube.com/watch?v=AcYF18oGn6Y",
+            layers: "Frontend",
+            format: "Watch",
+            time: "—",
+            why: "Step 5: building an auth context in React. Keep the session in the HttpOnly cookie, not in state.",
+          },
+          {
+            title: "NestJS API Authentication using JWT Tokens (HttpOnly cookies) — Scalable Scripts",
+            url: "https://www.youtube.com/watch?v=5rlsUfQTRzs&list=PLlameCF3cMEu8KAN-02n3CtToO5iYELTV",
+            layers: "Backend",
+            format: "Watch",
+            time: "—",
+            why: "Step 6: authenticating NestJS routes with HttpOnly cookies and guards.",
+          },
+          {
+            title: "React: Passing data deeply with context",
+            url: "https://react.dev/learn/passing-data-deeply-with-context",
+            layers: "Frontend",
             format: "Read",
-            time: "20 min",
-            why: "Safe evolutionary database design principles.",
+            time: "—",
+            why: "Official guide for sharing the current user through React Context.",
+          },
+          {
+            title: "MDN: Using HTTP cookies",
+            url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "Reference for HttpOnly, Secure, and SameSite cookie attributes.",
           },
         ],
-        assignment: [],
-        alternative: [],
+        assignment: [
+          {
+            title: "NestJS Authentication",
+            url: "https://docs.nestjs.com/security/authentication",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "Official reference for authentication guards in NestJS.",
+          },
+          {
+            title: "NestJS Authorization",
+            url: "https://docs.nestjs.com/security/authorization",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "Official reference for role, claims, and policy-based authorization.",
+          },
+          {
+            title: "NestJS CSRF protection",
+            url: "https://docs.nestjs.com/security/csrf",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "Adding CSRF protection to NestJS state-changing routes.",
+          },
+          {
+            title: "OWASP CSRF Prevention Cheat Sheet",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+            layers: "Backend, Concept",
+            format: "Read",
+            time: "—",
+            why: "Choosing and documenting a CSRF defense.",
+          },
+          {
+            title: "NestJS CORS",
+            url: "https://docs.nestjs.com/security/cors",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "Allowlisting the frontend origin with credentials.",
+          },
+          {
+            title: "Semgrep: triage and remediate findings",
+            url: "https://docs.semgrep.dev/semgrep-code/triage-remediation",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "Marking findings as valid or false positive and fixing them.",
+          },
+          {
+            title: "OWASP API1:2023 — Broken Object Level Authorization",
+            url: "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "The flaw this week prevents: reaching objects you are not a member of.",
+          },
+          {
+            title: "OWASP Session Management Cheat Sheet",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "Secure session cookie attributes and lifecycle.",
+          },
+          {
+            title: "OWASP Authentication Cheat Sheet",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "Generic sign-in error messages and authentication best practices.",
+          },
+          {
+            title: "OWASP Authorization Cheat Sheet",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "Deny by default and check authorization on every request.",
+          },
+          {
+            title: "Claude Code permissions",
+            url: "https://code.claude.com/docs/en/permissions",
+            layers: "AI agent security",
+            format: "Read",
+            time: "—",
+            why: "Limiting what a coding agent is allowed to run and read.",
+          },
+          {
+            title: "Claude Code sandboxing",
+            url: "https://code.claude.com/docs/en/sandboxing",
+            layers: "AI agent security",
+            format: "Read",
+            time: "—",
+            why: "Isolating a coding agent from secrets and production systems.",
+          },
+          {
+            title: "Cursor agent security",
+            url: "https://cursor.com/docs/agent/security",
+            layers: "AI agent security",
+            format: "Read",
+            time: "—",
+            why: "Security model of the Cursor agent.",
+          },
+          {
+            title: "Cursor run modes",
+            url: "https://cursor.com/docs/agent/security/run-modes",
+            layers: "AI agent security",
+            format: "Read",
+            time: "—",
+            why: "Choosing how much autonomy the Cursor agent gets.",
+          },
+        ],
+        alternative: [
+          {
+            title: "NestJS Authorization: RBAC, ABAC, and claims-based guards",
+            url: "https://www.youtube.com/watch?v=wdsp7BNmJRc",
+            layers: "Backend",
+            format: "Watch",
+            time: "—",
+            why: "Video walkthrough of authorization guard patterns in NestJS.",
+          },
+          {
+            title: "Building Smarter Authorization Systems (Oso)",
+            url: "https://www.lastweekinaws.com/podcast/screaming-in-the-cloud/building-smarter-authorization-systems-with-sam-scott/",
+            layers: "Concept",
+            format: "Listen",
+            time: "—",
+            why: "Podcast on designing authorization systems.",
+          },
+          {
+            title: "React Login With Google, optional (Arabic) — Nageeb Darwish",
+            url: "https://www.youtube.com/watch?v=GXPN9IOMH7A&list=PLpr1Lg_f0v3ojNKR4WzZ_SEXhiKBHDQmB&index=128",
+            layers: "Frontend",
+            format: "Watch",
+            time: "—",
+            why: "Optional extra: not part of this week's deliverable.",
+          },
+        ],
       },
-      reflectionQuestion: "Why must you not delete a database column in the same PR that stops using it?",
-      prerequisites: ["Week 4"],
+      reflectionQuestion:
+        "Why must the backend enforce membership even when the frontend already hides projects the user cannot access?",
+      prerequisites: [
+        "Week 3: Projects and project members (data model, transaction, endpoints)",
+        "Docker Compose PostgreSQL running locally",
+        "Node 22, Yarn & Vitest",
+      ],
     },
     6: {
       weekNumber: 6,

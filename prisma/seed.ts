@@ -108,9 +108,9 @@ async function main(): Promise<void> {
     },
     {
       weekNumber: 5,
-      title: "Validation and reliability: request schemas and error envelopes",
+      title: "Sign-in and project membership authorization",
       status: "draft" as const,
-      labels: ["backend", "frontend"],
+      labels: ["backend", "frontend", "security"],
     },
     {
       weekNumber: 6,

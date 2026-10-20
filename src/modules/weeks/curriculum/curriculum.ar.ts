@@ -723,44 +723,354 @@ export const curriculumAr: Record<number, CurriculumWeek> = {
     },
     5: {
       weekNumber: 5,
-      title: "تعديل المخطط وقواعد البيانات بلا انقطاع",
-      tagline: "تغيير قواعد البيانات الحية يتطلب خطوات توافقية دقيقة",
-      concept: "هجرة قواعد البيانات",
-      guidingQuestion: "إزاي نعمل هجرة لجدول مستخدم في الإنتاج من غير ما نوقف الخدمة؟",
+      title: "الهوية والتفويض والاستقلالية الآمنة",
+      tagline: "تسجيل الدخول يثبت من أنت، والعضوية تحدد ما يحق لك الوصول إليه",
+      concept: "المصادقة والتفويض وحدود الثقة",
+      guidingQuestion: "أين تقع حدود الثقة بين المستخدمين والخدمات ووكلاء البرمجة (AI agents)؟",
       bigIdea:
-        "في الأنظمة الحية، لا يمكن إسقاط الأعمدة أو تعديلها بخطوة واحدة مفاجئة. نتعلّم نمط Expand and Contract لتنفيذ هجرات Prisma آمنة بدون أي انقطاع في الخدمة.",
+        "في الأسبوع الثالث بنيت المشاريع (Projects) وأعضاء المشاريع. هذا الأسبوع تضيف **تسجيل الدخول** وتحمي بيانات المشاريع. فقط المستخدمون المسجلون يصلون إلى المشاريع، وفقط **أعضاء** المشروع يمكنهم رؤيته أو تعديله.\n\n١. **المصادقة (Authentication):** كل مسارات المشاريع تتطلب جلسة صالحة محفوظة في ملف تعريف ارتباط HttpOnly. بدون جلسة ← **401**.\n٢. **التفويض (Authorization):** التحقق من العضوية يتم في Guard أو Service وليس في المتحكم أبداً. غير الأعضاء يحصلون على رد واحد موثّق (**403** أو **404**) في كل مكان.\n٣. **أمان المتصفح:** حماية CSRF لكل مسار يغيّر الحالة، وقائمة CORS تسمح بأصل الواجهة الأمامية فقط.\n٤. **الواجهة الأمامية:** سياق مصادقة يُحمَّل من `/me`، ومسارات محمية، وشاشات لغير المسجلين ولرفض الوصول. الواجهة الأمامية لا تقرأ ولا تخزن رمز الجلسة أبداً. إخفاء زر هو تجربة مستخدم وليس أماناً — **الواجهة الخلفية هي من تفرض** القاعدة.\n٥. **الاستقلالية الآمنة:** شغّل Semgrep، وأصلح ثغرة تفويض مزروعة مع اختبار انحدار، وأبعد الأسرار وصلاحيات الإنتاج عن متناول وكيل الذكاء الاصطناعي.",
       outcomes: [
-        "كتابة هجرات آمنة تدعم التوافق مع الإصدارات السابقة.",
-        "فصل قراءة البيانات عن كتابتها أثناء مراحل الانتقال.",
+        "اشتراط جلسة صالحة على كل مسارات المشاريع وإرجاع 401 عند غيابها.",
+        "فرض عضوية المشروع داخل Guard أو Service وتطبيق سياسة إفصاح واحدة (403 أو 404) على كل المسارات المحمية.",
+        "ضبط ملف تعريف ارتباط الجلسة بخصائص HttpOnly و Secure وقيمة SameSite صريحة ومبرَّرة.",
+        "حماية كل مسارات POST و PATCH و PUT و DELETE من هجمات CSRF، والسماح لأصل الواجهة الأمامية فقط عبر CORS.",
+        "بناء سياق مصادقة واستمارة تسجيل دخول ومسارات محمية دون قراءة رمز الجلسة أو تخزينه.",
+        "الإعلان عن حالات الطلب عبر منطقة حية (Live Region) ونقل التركيز إلى رسالة الخطأ عند فشل الطلب.",
+        "اكتشاف ثغرة تفويض مزروعة وإصلاحها باستخدام Semgrep مع اختبار انحدار، وفرز بقية النتائج.",
       ],
-      coreConcepts: ["نمط التوسيع والانكماش (Expand and Contract)", "الهجرة الآمنة (Zero-Downtime Migrations)"],
+      coreConcepts: [
+        "المصادقة مقابل التفويض",
+        "ملفات تعريف ارتباط الجلسة (HttpOnly و Secure و SameSite)",
+        "ثغرة التفويض على مستوى الكائن (OWASP API1:2023)",
+        "سياسة الإفصاح: 403 مقابل 404",
+        "حماية CSRF وسياسة CORS",
+        "المسارات المحمية وسياق المصادقة في React",
+        "حالات الطلب الميسرة (Live Regions وإدارة التركيز)",
+        "التحليل الساكن وفرز النتائج (Semgrep)",
+        "صلاحيات وكلاء الذكاء الاصطناعي وعزلهم (Sandboxing)",
+      ],
       appliedThroughTheStack: [
-        { layer: "Prisma", details: "إدارة الهجرات وتحديث schema.prisma بحذر." },
-        { layer: "PostgreSQL", details: "فهارس آمنة وقيود لا تعطل الجداول." },
+        {
+          layer: "NestJS",
+          details: "AuthGuard على كل مسارات المشاريع، وتحقق من العضوية في Guard أو Service لعمليات المشاريع والمهام.",
+        },
+        {
+          layer: "HTTP",
+          details:
+            "ملف تعريف ارتباط للجلسة بخصائص HttpOnly و Secure و SameSite صريحة، وحماية CSRF للمسارات المغيّرة للحالة، وقائمة CORS مع credentials.",
+        },
+        {
+          layer: "React",
+          details:
+            "سياق مصادقة من GET /api/v1/auth/me، واستمارة تسجيل دخول (React Hook Form + Zod)، ومسارات مشاريع محمية، وشاشات لغير المسجلين ولرفض الوصول.",
+        },
+        {
+          layer: "أدوات الأمان",
+          details: "فحص Semgrep، وإصلاح ثغرة تفويض مزروعة مع اختبار انحدار، وفرز النتائج.",
+        },
       ],
       assignment: {
-        title: "هجرة آمنة لجدول حي بنمط Expand and Contract",
-        summary: "توسيع مخطط قاعدة البيانات بإضافة أعمدة جديدة مع دعم التوافق التراجعي الكامل.",
-        detailsMd: `### المخرجات البرمجية
-- **هجرة التوسيع (Expand)**: إضافة الحقل الجديد كحقل اختياري.
-- **الكتابة المزدوجة (Dual-write)**: تحديث الخدمة لتكتب في الحقلين القديم والجديد معاً.`,
+        title: "تسجيل الدخول والتفويض بعضوية المشروع",
+        summary:
+          "إضافة تسجيل الدخول، وحماية مسارات المشاريع من الأسبوع الثالث بالجلسات والتحقق من العضوية، وتأمين ملفات تعريف الارتباط و CSRF و CORS، وإصلاح ثغرة تفويض مزروعة باستخدام Semgrep.",
+        detailsMd: `### مهمة الأسبوع الخامس: الهوية والتفويض والاستقلالية الآمنة
+
+التذكرة: [Week 5 gist](https://gist.github.com/Ahmad-Elsayed/eb6c14748c213e85689e1a6c1c535c22)
+
+#### سياسة الوصول المشتركة
+
+الواجهة الأمامية والخلفية تتبعان **نفس السياسة**. اكتب الاختيار النهائي في كلا الـ PRs.
+
+| الحالة | استجابة الـ API | شاشة الواجهة |
+| --- | --- | --- |
+| غير مسجل الدخول | **401** Unauthorized | شاشة غير المسجلين |
+| مسجل الدخول لكنه ليس عضواً في المشروع | **403** Forbidden *أو* **404** (إخفاء وجود المشروع) — اختر واحداً | شاشة رفض الوصول / غير موجود |
+| مسجل الدخول وعضو | 200 | الصفحة |
+
+اختر 403 أو 404 مرة واحدة واستخدمه في **كل** مسارات المشاريع المحمية.
+
+#### ١. الواجهة الأمامية (\`elwarsha-web\`)
+
+**الأدوات المطلوبة:** React Context و React Router و TanStack Query v5 و React Hook Form + Zod و Vitest + Testing Library.
+
+أرسل كل طلب **مع credentials** (ملفات تعريف الارتباط). الواجهة الأمامية **لا تقرأ ولا تخزن رمز الجلسة أبداً** — لا \`localStorage\` ولا \`sessionStorage\` ولا رمز في الحالة. إخفاء زر هو تجربة مستخدم وليس أماناً.
+
+- **تسجيل الدخول — \`/:locale/sign-in/\`**
+  - الحقول: البريد الإلكتروني، كلمة المرور.
+  - التحقق عبر Zod (حقول مطلوبة، بريد إلكتروني صالح).
+  - الحالات: أخطاء الحقول، جارٍ الإرسال، خطأ عام ("البريد الإلكتروني أو كلمة المرور غير صحيحة" — لا تحدد أيهما أبداً)، النجاح (العودة إلى الصفحة التي أرادها المستخدم).
+- **سياق المصادقة**
+  - تحميل المستخدم الحالي من \`GET /api/v1/auth/me\`.
+  - يوفّر: المستخدم المسجل، جارٍ التحميل، غير مسجل.
+  - عرض اسم المستخدم وزر **تسجيل الخروج** في الترويسة. تسجيل الخروج يستدعي \`POST /api/v1/auth/logout\`، ويمسح السياق، وينتقل إلى الصفحة الرئيسية.
+- **مسارات المشاريع المحمية** — \`/:locale/projects/\` و \`/:locale/projects/new/\` و \`/:locale/projects/:id/\`
+  - غير مسجل ← **شاشة غير المسجلين** مع زر "تسجيل الدخول".
+  - ليس عضواً ← **شاشة رفض الوصول** (أو شاشة غير موجود، حسب السياسة المشتركة).
+- ابنِ كل شاشة بالعربية (RTL) والإنجليزية (LTR).
+- **إمكانية الوصول:** يتم الإعلان عن حالات الطلب عبر **منطقة حية** (\`role="status"\` / \`role="alert"\`)، و**ينتقل التركيز إلى رسالة الخطأ** عند فشل الطلب.
+- **الاختبار:** اختبار واحد يثبت أن **حالة رفض الوصول** تُعرض عندما يرد الـ API بأن المستخدم غير مسموح له.
+
+#### ٢. الواجهة الخلفية (\`elwarsha-api\`)
+
+**الأدوات المطلوبة:** NestJS Guards و cookie-parser وحماية CSRF (\`csrf-csrf\` أو بديل موثّق) و NestJS CORS و Zod و Semgrep و Vitest + supertest.
+
+المشروع المبدئي يحتوي بالفعل على \`AuthGuard\` وجلسات ملفات تعريف الارتباط و \`/api/v1/auth/me\` في \`src/modules/identity\`. ابنِ عليها؛ لا تنشئ نظام مصادقة ثانياً.
+
+١. **المصادقة** — كل مسارات المشاريع تتطلب جلسة صالحة. بدون جلسة ← **401**.
+٢. **التفويض بالعضوية** — تحقق أن المستخدم المسجل **عضو** في المشروع في كل عمليات المشروع (القائمة، التفاصيل، الإنشاء، الأعضاء) وفي عملية **مهمة واحدة** على الأقل. القائمة تعيد فقط المشاريع التي ينتمي إليها المستخدم. ضع التحقق في Guard أو Service وليس في المتحكم.
+٣. **سياسة الإفصاح** — أعد 403 أو 404 لغير الأعضاء حسب السياسة المشتركة. نفس الرد في كل مكان.
+٤. **ملف تعريف ارتباط الجلسة** — \`HttpOnly\` و \`Secure\` وقيمة \`SameSite\` صريحة. اشرح سبب اختيارك لقيمة \`SameSite\`.
+٥. **CSRF** — احمِ كل \`POST\` و \`PATCH\` و \`PUT\` و \`DELETE\`. وثّق آلية الحماية التي اخترتها.
+٦. **CORS** — اسمح لأصل الواجهة الأمامية فقط مع credentials. بدون أي wildcard (\`*\`).
+٧. **Semgrep** — شغّله، وأصلح **ثغرة تفويض مزروعة واحدة**، وأضف اختبار انحدار. افرز بقية النتائج: صنّف كل نتيجة صحيحة أو إيجابية كاذبة، وبرّر الإيجابيات الكاذبة.
+٨. **نقاط النهاية (Endpoints)**
+
+| الطريقة | المسار | الغرض | الأخطاء |
+| --- | --- | --- | --- |
+| GET | \`/api/v1/auth/me\` | المستخدم الحالي | 401 غير مسجل |
+| POST | \`/api/v1/auth/logout\` | إنهاء الجلسة | 403 فشل CSRF |
+| GET | \`/api/v1/projects\` | المشاريع التي ينتمي إليها المستخدم | 401 |
+| POST | \`/api/v1/projects\` | إنشاء مشروع | 401 · 403 فشل CSRF |
+| GET | \`/api/v1/projects/:id\` | تفاصيل المشروع | 401 · 403 / 404 ليس عضواً |
+
+الأخطاء تستخدم صيغة problem-details من الأسبوع الثاني. لا تضع أسراراً أو تتبعات أخطاء (stack traces) في رسائل الخطأ أبداً.
+
+- **الاختبار:** اختبار مسار فشل واحد يثبت أن **غير العضو يُرفض** حسب سياسة الإفصاح.
+
+#### ٣. معيار التحقق والاختبار
+- تشغيل \`yarn test\` و \`yarn build\` في \`elwarsha-web\`.
+- تشغيل \`yarn validate\` و \`yarn validate:ci\` في \`elwarsha-api\` (يحتاج PostgreSQL محلياً: \`docker compose up -d\`).
+
+#### تعتبر المهمة منجزة عندما
+- [ ] الطلبات غير المسجلة تحصل على **401**، وغير الأعضاء يحصلون على **403 أو 404** الموثّق، بنفس الشكل في الـ API والواجهة.
+- [ ] يتم التحقق من العضوية في كل عمليات المشاريع المحمية وفي عملية مهمة واحدة.
+- [ ] ملف تعريف ارتباط الجلسة \`HttpOnly\` و \`Secure\` مع \`SameSite\` صريح.
+- [ ] المسارات المغيّرة للحالة محمية من CSRF وآلية الحماية موثّقة.
+- [ ] CORS يسمح لأصل الواجهة الأمامية فقط مع credentials؛ بدون wildcard.
+- [ ] الواجهة الأمامية لا تقرأ ولا تخزن رمز الجلسة أبداً.
+- [ ] ثغرة Semgrep واحدة مُصلحة مع اختبار انحدار؛ وبقية النتائج مفروزة.
+- [ ] حالات الطلب تستخدم منطقة حية والتركيز ينتقل إلى رسالة الخطأ.
+- [ ] لا أسرار في الكود أو في سياق وكيل الذكاء الاصطناعي؛ والوكيل ليس لديه وصول للإنتاج.
+
+**اختياري:** التحقق من الملكية في كل عمليات المهام، وإصلاح الثغرة المزروعة الثانية مع اختبار انحدار.
+
+> **ملاحظة أثناء المشاهدة:** بعض الفيديوهات تحفظ الرمز في \`localStorage\` أو في حالة React. في هذا المشروع الجلسة تعيش في **ملف تعريف ارتباط HttpOnly** يضبطه الـ API، والواجهة الأمامية **لا تقرأ ولا تخزن الرمز أبداً**. تعلّم الأفكار لكن اتبع قواعد هذا الأسبوع. تسجيل الدخول بجوجل إضافي وليس جزءاً من مخرجات هذا الأسبوع.`,
       },
       resources: {
         required: [
           {
-            title: "دليل الهجرة بدون توقف الخدمة (Prisma)",
-            url: "https://www.prisma.io/dataguide/types/relational/zero-downtime-migrations",
-            layers: "Database",
+            title: "JWT ببساطة: الفرق بين Authentication و Authorization وإدارة الجلسات — Bak Tech",
+            url: "https://www.youtube.com/watch?v=wDwA7ihoOlc",
+            layers: "Concept",
+            format: "Watch",
+            time: "—",
+            why: "الخطوة ١: الفرق بين المصادقة والتفويض والجلسات و JWT.",
+          },
+          {
+            title: "الفرق بين ال Cookies و ال Sessions — أكاديمية ترميز",
+            url: "https://www.youtube.com/watch?v=hUQPu-RWJ_U",
+            layers: "Concept",
+            format: "Watch",
+            time: "—",
+            why: "الخطوة ٢: كيف تعمل ملفات تعريف الارتباط وجلسات الخادم معاً.",
+          },
+          {
+            title: "ثغرة CSRF بدون أي حماية — Root Academy",
+            url: "https://www.youtube.com/watch?v=rYNeQUMcdIs&list=PLfnsjJ3BcOKw3YYXxmisNo0S-KUem4zlH",
+            layers: "Concept",
+            format: "Watch",
+            time: "—",
+            why: "الخطوة ٣: كيف يعمل هجوم CSRF ولماذا تحتاج المسارات المغيّرة للحالة إلى حماية.",
+          },
+          {
+            title: "حماية المسارات في React، الفيديوهات ٩١–٩٣ — Nageeb Darwish",
+            url: "https://www.youtube.com/watch?v=cjTE0IayYPg&list=PLpr1Lg_f0v3ojNKR4WzZ_SEXhiKBHDQmB&index=91",
+            layers: "Frontend",
+            format: "Watch",
+            time: "—",
+            why: "الخطوة ٤: حماية المسارات في React Router وإعادة التوجيه بعد تسجيل الدخول.",
+          },
+          {
+            title: "Authentication in React with JWTs, Access & Refresh Tokens (بالإنجليزية) — Cosden Solutions",
+            url: "https://www.youtube.com/watch?v=AcYF18oGn6Y",
+            layers: "Frontend",
+            format: "Watch",
+            time: "—",
+            why: "الخطوة ٥: بناء سياق مصادقة في React. أبقِ الجلسة في ملف تعريف ارتباط HttpOnly وليس في الحالة.",
+          },
+          {
+            title: "NestJS API Authentication using JWT Tokens (بالإنجليزية) — Scalable Scripts",
+            url: "https://www.youtube.com/watch?v=5rlsUfQTRzs&list=PLlameCF3cMEu8KAN-02n3CtToO5iYELTV",
+            layers: "Backend",
+            format: "Watch",
+            time: "—",
+            why: "الخطوة ٦: مصادقة مسارات NestJS باستخدام ملفات تعريف ارتباط HttpOnly والحراس.",
+          },
+          {
+            title: "تمرير البيانات بعمق عبر Context (توثيق React الرسمي)",
+            url: "https://react.dev/learn/passing-data-deeply-with-context",
+            layers: "Frontend",
             format: "Read",
-            time: "٢٠ دقيقة",
-            why: "فهم استراتيجيات هجرة قواعد البيانات الإنتاجية.",
+            time: "—",
+            why: "الدليل الرسمي لمشاركة المستخدم الحالي عبر React Context.",
+          },
+          {
+            title: "MDN: استخدام ملفات تعريف الارتباط HTTP",
+            url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "مرجع خصائص HttpOnly و Secure و SameSite.",
           },
         ],
-        assignment: [],
-        alternative: [],
+        assignment: [
+          {
+            title: "المصادقة في NestJS (التوثيق الرسمي)",
+            url: "https://docs.nestjs.com/security/authentication",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "المرجع الرسمي لحراس المصادقة في NestJS.",
+          },
+          {
+            title: "التفويض في NestJS (التوثيق الرسمي)",
+            url: "https://docs.nestjs.com/security/authorization",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "المرجع الرسمي للتفويض المبني على الأدوار والسياسات.",
+          },
+          {
+            title: "حماية CSRF في NestJS",
+            url: "https://docs.nestjs.com/security/csrf",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "إضافة حماية CSRF لمسارات NestJS المغيّرة للحالة.",
+          },
+          {
+            title: "OWASP: دليل الوقاية من CSRF",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+            layers: "Backend, Concept",
+            format: "Read",
+            time: "—",
+            why: "اختيار آلية حماية CSRF وتوثيقها.",
+          },
+          {
+            title: "CORS في NestJS",
+            url: "https://docs.nestjs.com/security/cors",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "السماح لأصل الواجهة الأمامية فقط مع credentials.",
+          },
+          {
+            title: "Semgrep: فرز النتائج ومعالجتها",
+            url: "https://docs.semgrep.dev/semgrep-code/triage-remediation",
+            layers: "Backend",
+            format: "Read",
+            time: "—",
+            why: "تصنيف النتائج كصحيحة أو إيجابية كاذبة وإصلاحها.",
+          },
+          {
+            title: "OWASP API1:2023 — ثغرة التفويض على مستوى الكائن",
+            url: "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "الثغرة التي يمنعها هذا الأسبوع: الوصول إلى كائنات لست عضواً فيها.",
+          },
+          {
+            title: "OWASP: دليل إدارة الجلسات",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "خصائص ملفات تعريف ارتباط الجلسة الآمنة ودورة حياتها.",
+          },
+          {
+            title: "OWASP: دليل المصادقة",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "رسائل خطأ عامة لتسجيل الدخول وأفضل ممارسات المصادقة.",
+          },
+          {
+            title: "OWASP: دليل التفويض",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+            layers: "Concept",
+            format: "Read",
+            time: "—",
+            why: "الرفض افتراضياً والتحقق من التفويض في كل طلب.",
+          },
+          {
+            title: "صلاحيات Claude Code",
+            url: "https://code.claude.com/docs/en/permissions",
+            layers: "أمان وكلاء الذكاء الاصطناعي",
+            format: "Read",
+            time: "—",
+            why: "تقييد ما يُسمح لوكيل البرمجة بتشغيله وقراءته.",
+          },
+          {
+            title: "عزل Claude Code (Sandboxing)",
+            url: "https://code.claude.com/docs/en/sandboxing",
+            layers: "أمان وكلاء الذكاء الاصطناعي",
+            format: "Read",
+            time: "—",
+            why: "عزل وكيل البرمجة عن الأسرار وأنظمة الإنتاج.",
+          },
+          {
+            title: "أمان وكيل Cursor",
+            url: "https://cursor.com/docs/agent/security",
+            layers: "أمان وكلاء الذكاء الاصطناعي",
+            format: "Read",
+            time: "—",
+            why: "نموذج الأمان الخاص بوكيل Cursor.",
+          },
+          {
+            title: "أوضاع تشغيل Cursor",
+            url: "https://cursor.com/docs/agent/security/run-modes",
+            layers: "أمان وكلاء الذكاء الاصطناعي",
+            format: "Read",
+            time: "—",
+            why: "تحديد مقدار الاستقلالية الممنوحة لوكيل Cursor.",
+          },
+        ],
+        alternative: [
+          {
+            title: "NestJS Authorization: RBAC و ABAC والحراس المبنية على الـ Claims (بالإنجليزية)",
+            url: "https://www.youtube.com/watch?v=wdsp7BNmJRc",
+            layers: "Backend",
+            format: "Watch",
+            time: "—",
+            why: "شرح مرئي لأنماط حراس التفويض في NestJS.",
+          },
+          {
+            title: "Building Smarter Authorization Systems (Oso) — بودكاست بالإنجليزية",
+            url: "https://www.lastweekinaws.com/podcast/screaming-in-the-cloud/building-smarter-authorization-systems-with-sam-scott/",
+            layers: "Concept",
+            format: "Listen",
+            time: "—",
+            why: "بودكاست عن تصميم أنظمة التفويض.",
+          },
+          {
+            title: "تسجيل الدخول باستخدام جوجل، اختياري — Nageeb Darwish",
+            url: "https://www.youtube.com/watch?v=GXPN9IOMH7A&list=PLpr1Lg_f0v3ojNKR4WzZ_SEXhiKBHDQmB&index=128",
+            layers: "Frontend",
+            format: "Watch",
+            time: "—",
+            why: "إضافة اختيارية: ليست جزءاً من مخرجات هذا الأسبوع.",
+          },
+        ],
       },
-      reflectionQuestion: "ليه مينفعش نمسح عمود من قاعدة البيانات في نفس الـ PR اللي بيوقف استخدامه في الكود؟",
-      prerequisites: ["الأسبوع الرابع"],
+      reflectionQuestion:
+        "لماذا يجب أن تفرض الواجهة الخلفية التحقق من العضوية حتى لو كانت الواجهة الأمامية تخفي المشاريع التي لا يحق للمستخدم الوصول إليها؟",
+      prerequisites: [
+        "الأسبوع الثالث: المشاريع وأعضاء المشاريع (نموذج البيانات، المعاملة، نقاط النهاية)",
+        "تشغيل PostgreSQL محلياً عبر Docker Compose",
+        "Node 22 و Yarn و Vitest",
+      ],
     },
     6: {
       weekNumber: 6,
