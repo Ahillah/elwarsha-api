@@ -102,15 +102,15 @@ async function main(): Promise<void> {
     },
     {
       weekNumber: 4,
-      title: "Authentication and authorization: session guards and capabilities",
+      title: "Full-stack login and protected route authorization",
       status: "draft" as const,
-      labels: ["backend", "security"],
+      labels: ["backend", "frontend", "security"],
     },
     {
       weekNumber: 5,
-      title: "Sign-in and project membership authorization",
+      title: "Validation and reliability: request schemas and error envelopes",
       status: "draft" as const,
-      labels: ["backend", "frontend", "security"],
+      labels: ["backend", "frontend"],
     },
     {
       weekNumber: 6,
