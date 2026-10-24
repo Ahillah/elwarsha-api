@@ -725,9 +725,10 @@ The backend sends a clear JSON response listing every invalid field:
     guidingQuestion:
       "How do we prove user identity and ensure portal routes are strictly gated?",
     bigIdea:
-      "In Week 3, you built the Cohort Weeks portal view. This week, we make **login fully working** and **protect sensitive routes** across both frontend and backend:\n\n1. **Authentication (Login):** Prove user identity through secure HttpOnly cookie sessions. Unauthenticated requests return **401 Unauthorized**.\n2. **Route Gating (Backend):** Protect cohort and week endpoints with NestJS `AuthGuard` and capability/membership checks.\n3. **Protected Routes (Frontend):** Build a `ProtectedRoute` wrapper for portal routes that handles loading, signed-out, and denied states without ever reading or storing session tokens in JavaScript storage.\n4. **Session Lifecycle:** Display the user identity and a Sign-out button in the UI that cleanly revokes the session on the backend.\n5. **Browser Security:** Enforce HttpOnly and SameSite cookie policies, along with strict CORS allowlists for the frontend origin with credentials.",
+      "In Week 3, you built the Cohort Weeks portal view. This week, we make **login fully working** and **protect sensitive routes** across both frontend and backend:\n\n1. **Authentication (Login):** Prove user identity through secure HttpOnly cookie sessions. Unauthenticated requests return **401 Unauthorized**.\n2. **Object-Level Authorization (BOLA Defense):** Proving identity (401) is only the first layer. A participant must not access another cohort's weekly materials. We implement a NestJS `CohortMembershipGuard` checking database membership for `:cohortSlug` and returning **403 Forbidden** for non-members.\n3. **Protected Routes (Frontend):** Build a `ProtectedRoute` wrapper for portal routes that handles loading, signed-out, and denied states without ever reading or storing session tokens in JavaScript storage.\n4. **Session Lifecycle:** Display the user identity and a Sign-out button in the UI that cleanly revokes the session on the backend.\n5. **Browser Security:** Enforce HttpOnly and SameSite cookie policies, along with strict CORS allowlists for the frontend origin with credentials.",
     outcomes: [
       "Require a valid session cookie on protected API routes and return 401 when missing or expired.",
+      "Implement object-level cohort authorization with CohortMembershipGuard to prevent Broken Object Level Authorization (BOLA), returning 403 when an authenticated user attempts to access a cohort they are not enrolled in.",
       "Implement a ProtectedRoute component in React that gates portal routes based on authentication status.",
       "Render dedicated, accessible Signed-Out and Access-Denied screens in Arabic and English.",
       "Connect the complete login and logout flow end-to-end between frontend and backend.",
@@ -735,6 +736,7 @@ The backend sends a clear JSON response listing every invalid field:
     ],
     coreConcepts: [
       "Authentication vs authorization",
+      "Object-level authorization & BOLA prevention (OWASP API1:2023)",
       "Session cookies (HttpOnly, Secure, SameSite)",
       "Protected routes and auth context in React",
       "Route gating with NestJS Guards",
@@ -745,7 +747,7 @@ The backend sends a clear JSON response listing every invalid field:
       {
         layer: "NestJS",
         details:
-          "AuthGuard and capability checks applied to WeeksController endpoints, returning 401 when unauthenticated.",
+          "AuthGuard, RequireCapability('weeks.read'), and CohortMembershipGuard applied to WeeksController endpoints, returning 401 when unauthenticated and 403 when accessing an unauthorized cohort.",
       },
       {
         layer: "HTTP",
@@ -803,10 +805,14 @@ Send every request **with credentials** (cookies). The frontend **never reads or
 The starter already has \`AuthGuard\`, session cookies, and \`/api/v1/auth/me\` in \`src/modules/identity\`. Build on them; do not create a second auth system.
 
 1. **Authentication** — gate \`WeeksController\` endpoints (\`/api/v1/cohorts/:cohortSlug/weeks\`, \`/api/v1/weeks\`) with \`@UseGuards(AuthGuard)\`. No session → **401**.
-2. **Authorization** — check that the signed-in user has the required capability (e.g. \`weeks.read\`) or cohort membership. Unauthorized actors → **403**.
-3. **Session cookie** — ensure session cookies use \`HttpOnly\`, \`SameSite: "lax"\`, and \`Secure\` in production.
-4. **CORS** — allow only the frontend origin, with credentials enabled (\`credentials: true\`). No wildcard (\`*\`).
-5. **Endpoints in scope:**
+2. **Capability check** — enforce \`@RequireCapability("weeks.read")\` for role-based authorization.
+3. **Object-level authorization (\`CohortMembershipGuard\`)** — protect \`:cohortSlug\` endpoints against Broken Object Level Authorization (BOLA). Verify via \`PrismaService\` that the authenticated user is enrolled in the requested cohort.
+   - Enrolled members → **200 OK**.
+   - Authenticated non-members → **403 Forbidden** (or 404).
+   - Admins & maintainers → bypass cohort-specific check.
+4. **Session cookie** — ensure session cookies use \`HttpOnly\`, \`SameSite: "lax"\`, and \`Secure\` in production.
+5. **CORS** — allow only the frontend origin, with credentials enabled (\`credentials: true\`). No wildcard (\`*\`).
+6. **Endpoints in scope:**
 
 | Method | Path | Purpose | Expected Status / Errors |
 | --- | --- | --- | --- |
@@ -814,19 +820,22 @@ The starter already has \`AuthGuard\`, session cookies, and \`/api/v1/auth/me\` 
 | GET | \`/api/v1/auth/callback\` | Validate callback & issue session cookie | 302 Redirect |
 | GET | \`/api/v1/auth/me\` | Current authenticated user & capabilities | 401 signed out |
 | POST | \`/api/v1/auth/logout\` | Revoke session & clear cookie | 200 OK |
-| GET | \`/api/v1/cohorts/:cohortSlug/weeks\` | List cohort weeks (protected) | 401 unauthenticated · 403 forbidden |
-| GET | \`/api/v1/cohorts/:cohortSlug/weeks/:weekNumber\` | Week detail (protected) | 401 unauthenticated · 403 / 404 |
+| GET | \`/api/v1/cohorts/:cohortSlug/weeks\` | List cohort weeks (protected) | 401 unauthenticated · 403 not enrolled |
+| GET | \`/api/v1/cohorts/:cohortSlug/weeks/:weekNumber\` | Week detail (protected) | 401 unauthenticated · 403 not enrolled / 404 |
 
 - **Verification Tests:**
   - One test proving that calling protected weeks endpoints without an active session returns **401**.
-  - One test proving that an authenticated request with a valid session returns **200**.
+  - One test proving that an authenticated user who is NOT enrolled in the requested cohort returns **403 Forbidden**.
+  - One test proving that an authenticated enrolled member returns **200 OK**.
 
 #### 3. Verification Bar
 - Run \`yarn test\` and \`yarn build\` in \`elwarsha-web\`.
 - Run \`yarn validate\` and \`yarn test\` in \`elwarsha-api\` (needs local Postgres: \`docker compose up -d\`).
 
 #### Done when
-- [ ] Unauthenticated requests to protected API routes return **401**; unauthorized requests return **403**.
+- [ ] Unauthenticated requests to protected API routes return **401**.
+- [ ] Authenticated requests to cohorts the user is not enrolled in return **403 Forbidden** (BOLA defense).
+- [ ] Enrolled users can view their cohort weeks with **200 OK**.
 - [ ] Portal routes on the frontend are guarded by authentication state.
 - [ ] Unauthenticated users visiting portal routes see a clear Signed-Out screen with a Sign In button.
 - [ ] The full login and logout cycle works end-to-end with HttpOnly cookies.
@@ -936,6 +945,14 @@ Once your core PR is green and verified using the built-in fake provider, test y
           format: "Read",
           time: "15 min",
           why: "Canonical reference for CanActivate, ExecutionContext, and how guards protect endpoints.",
+        },
+        {
+          title: "OWASP API1:2023 — Broken Object Level Authorization",
+          url: "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+          layers: "Concept, Backend",
+          format: "Read",
+          time: "15 min",
+          why: "Understanding BOLA flaws and why verifying cohort membership per object is essential.",
         },
         {
           title: "NestJS Authentication",
