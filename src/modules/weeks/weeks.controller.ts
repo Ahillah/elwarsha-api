@@ -35,4 +35,3 @@ export class WeeksController {
     return this.weeks.listWeeksForCohort(activeSlug, loc);
   }
 }
-
