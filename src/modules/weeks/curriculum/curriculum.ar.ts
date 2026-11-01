@@ -1080,47 +1080,371 @@ export const curriculumAr: Record<number, CurriculumWeek> = {
   },
   6: {
     weekNumber: 6,
-    title: "معالجة المهام الخلفية وتزامن العمليات",
-    tagline: "التحكم في التزامن يحمي البيانات من التضارب والتكرار",
-    concept: "التزامن والعمال",
-    guidingQuestion: "إزاي نمنع اثنين Workers من معالجة نفس المهمة في نفس اللحظة؟",
+    title: "الاختبارات والجودة وحلقات التقييم",
+    tagline: "استخدم أدلة قابلة للتشغيل للتحكم في التغيير",
+    concept: "الاختبارات والتقييم",
+    guidingQuestion:
+      "إزاي نعرف إن الكود اللي كتبه إنسان أو ذكاء اصطناعي بيحل المشكلة فعلاً؟",
     bigIdea:
-      "عند تشغيل أكثر من نسخة من خوادم المعالجة، تظهر مشاكل التنافس (Race Conditions). نستخدم آليات القفل الآمن وعقود الإيجار (Lease Locks) لمعالجة المهام بضمانات تسليم محددة.",
+      "الاختبار يحمي سلوكاً معيناً فقط إذا **فشل عندما ينكسر هذا السلوك**. مسار التقديم للدفعة عليه اختبارات بالفعل في الطرفين. هذا الأسبوع تراجعها كما يفعل المراجع:\n\n١. **خطط حسب المخاطر:** ابنِ مصفوفة اختبارات مبنية على المخاطر قبل كتابة أي اختبار، واحتفظ فقط بالصفوف التي تستطيع تبريرها.\n٢. **اختبر السلوك لا التفاصيل الداخلية:** ابحث بالدور (role) والتسمية (label)، وتفاعل عبر `user-event`، وتحقق مما يدركه المستخدم.\n٣. **اختر أرخص مستوى يكشف الخطر:** القواعد الصافية لها اختبارات وحدة، والعقود لها اختبارات HTTP، والرحلة الحرجة فقط لها اختبار متصفح.\n٤. **أثبت ذلك:** اكسر كود الإنتاج عمداً وشاهد الاختبار يفشل.\n٥. **قيّم مخرجات الذكاء الاصطناعي:** صنّف كل ملاحظة مراجعة من الذكاء الاصطناعي إلى صحيحة أو إنذار كاذب أو غير مؤكدة، بدلاً من قبولها.",
     outcomes: [
-      "استخدام عقود إيجار المهام القابلة للتجديد.",
-      "استرداد المهام المعلقة التي تعطلت أثناء المعالجة.",
+      "اختيار مستوى الاختبار المناسب للسلوك وحجم خطره.",
+      "التمييز بين اختبار يحمي سلوكاً واختبار يشغّل الكود فقط.",
+      "كتابة اختبارات للواجهة الأمامية والخلفية ومن طرف لطرف تركز على السلوك.",
+      "إبقاء بيانات الاختبار قابلة للتكرار وعزل الاعتماديات: الشبكة وقاعدة البيانات والساعة.",
+      "استخدام فحص CI إلزامي كدليل قبل الدمج.",
+      "تقييم الكود والاختبارات وملاحظات المراجعة التي يولدها الذكاء الاصطناعي بدلاً من قبولها.",
     ],
     coreConcepts: [
-      "عقود الإيجار (Lease Locks)",
-      "إعادة المحاولة مع التراجع الأسي (Exponential Backoff)",
+      "اختبارات الوحدة والتكامل والعقود ومن طرف لطرف",
+      "السلوك مقابل تفاصيل التنفيذ",
+      "الحتمية وعزل الاختبارات",
+      "مصفوفة اختبارات مبنية على المخاطر",
+      "كسر السلوك عمداً لإثبات الاختبار",
+      "تصنيف ملاحظات الذكاء الاصطناعي: صحيحة / إنذار كاذب / غير مؤكدة",
     ],
     appliedThroughTheStack: [
-      { layer: "PostgreSQL", details: "حقول lockedAt و lockedBy و attempts." },
-      { layer: "Worker", details: "حلقات الاستطلاع والمعالجة الآمنة." },
+      {
+        layer: "React",
+        details:
+          "استعلامات Testing Library بالدور والتسمية مع user-event، والتحقق مما يدركه المستخدم (elwarsha-web).",
+      },
+      {
+        layer: "NestJS",
+        details:
+          "اختبارات وحدة للـ providers بدون قاعدة بيانات أو Nest module، واختبارات HTTP عبر AppModule باستخدام supertest (elwarsha-api).",
+      },
+      {
+        layer: "Playwright",
+        details:
+          "مسار التقديم من طرف لطرف في متصفح حقيقي، مع استبدال الـ API عند حدود الشبكة (page.route).",
+      },
+      {
+        layer: "GitHub",
+        details: "فحص verify كفحص حالة إلزامي: الفحص الأحمر يعطّل زر الدمج.",
+      },
     ],
     assignment: {
-      title: "إدارة عقود إيجار المهام ومعالجة التعطل",
-      summary: "تطبيق تجديد قفل الإيجار (Heartbeat) واسترداد المهام المعلقة تلقائياً.",
-      detailsMd: `### المخرجات البرمجية
-- **تجديد الإيجار**: إرسال نبضات دورية أثناء تنفيذ المهمة.
-- **استرداد المهام المتروكة**: إعادة المهام المنتهية صلاحية إيجارها إلى الطابور.`,
+      title: "مراجعة وتقوية اختبارات التقديم للدفعة",
+      summary:
+        "ابنِ مصفوفة اختبارات مبنية على المخاطر، وقوِّ اختبارات نموذج الواجهة، وأضف اختبارات الوحدة الناقصة لـ ApplicationsService، وأثبت اختبارات كل طرف بكسر الكود عمداً، وقارن ملاحظات المراجعة البشرية بملاحظات الذكاء الاصطناعي.",
+      detailsMd: `### مهمة الأسبوع السادس: مراجعة وتقوية اختبارات التقديم للدفعة
+
+**المطلوب تسليمه:** طلب دمج (PR) واحد لكل مستودع. وصف كل PR يحتوي على الأقسام ١–٦ أدناه. إذا كانت مراجعة الـ PR تحتاج أكثر من ٢٠ دقيقة تقريباً، قسّمه.
+
+#### نقطة البداية
+
+| الطرف | الملف | ما يغطيه | الفجوات المعروفة |
+| --- | --- | --- | --- |
+| الواجهة | \`src/features/apply/CohortApplicationForm.test.tsx\` | عرض الأقسام؛ أخطاء الحقول 422؛ تنبيه 409 العام؛ إيصال 201 | يستخدم \`fireEvent\`؛ يبحث عن الأقسام بـ \`getByText\`؛ يتحقق من المعرّف الحرفي \`aria-describedby="email-error"\` |
+| الـ API | \`test/app.e2e-spec.ts\` (آخر ٣ اختبارات) | 201؛ 422 مع \`invalidParams\`؛ 409 لطلب مطابق تماماً | غير مغطى: المطابقة دون اعتبار حالة الأحرف، تكرار حساب GitHub، دفعة أخرى |
+| الـ API | \`src/modules/applications/applications.service.spec.ts\` | **غير موجود** | \`ApplicationsService\` بلا اختبارات وحدة |
+
+حقائق تخطط حولها:
+
+- \`ApplicationsService\` يخزن الطلبات **في الذاكرة**. الدالة \`apply()\` من نوع \`async\` وترمي \`ConflictError\` (409)، و\`reset()\` تمسح الحالة.
+- \`test/app.e2e-spec.ts\` يحتاج Postgres مع تطبيق الـ migrations والـ seed، ويشارك قاعدة البيانات مع بيئة التطوير المحلية.
+- \`yarn e2e\` يشغّل نسخة الواجهة المبنية عبر \`vite preview\`. **لا يعمل أي API.**
+
+#### ١. مصفوفة الاختبارات المبنية على المخاطر
+
+اطلب من الوكيل مصفوفة اختبارات مبنية على المخاطر قبل أن يكتب أي اختبار، والصق الطلب والمخرجات الخام في الـ PR. بعدها ابنِ الجدول النهائي بهذا الشكل، بصف لكل اختبار موجود لمسار التقديم ولكل اختبار تضيفه:
+
+| السلوك | الخطر لو انكسر | المستوى | الاختبار (ملف › اسم) | الحالة | لماذا هذا المستوى |
+| --- | --- | --- | --- | --- | --- |
+| رفض البريد المكرر في نفس الدفعة بغض النظر عن حالة الأحرف | متقدم يسجل مرتين بـ \`Sara@\` و \`sara@\` | وحدة | \`applications.service.spec.ts\` › "rejects duplicate email ignoring case" | add | قاعدة صافية لا تحتاج HTTP ولا قاعدة بيانات. |
+
+- **الحالة** واحدة من: keep، fix، add، delete.
+- صف واحد على الأقل حالته **delete**، أو **fix** يدمج اختبارين متداخلين.
+- الصفوف التي اقترحها الذكاء الاصطناعي ورفضتها تبقى في الجدول بالحالة **rejected** مع السبب.
+
+#### ٢. الواجهة الأمامية (\`elwarsha-web\`)
+
+قوِّ \`CohortApplicationForm.test.tsx\`. يكتمل العمل عندما:
+
+- لا يظهر \`fireEvent\` في الملف. التفاعل يتم عبر \`const user = userEvent.setup()\` و \`await user.type()\` / \`await user.click()\`.
+- يُعثر على الأقسام الأربعة بـ \`getByRole("group", { name: /…/ })\`. الاسم يأتي من \`<legend>\`.
+- **422:** يُعثر على حقل البريد بـ \`getByLabelText\` ويُتحقق منه بـ \`toHaveAttribute("aria-invalid", "true")\` و \`toHaveAccessibleDescription(/valid email/i)\`. لا يشير أي اختبار إلى معرّف عنصر.
+- **409:** \`getByRole("alert")\` يحتوي رسالة التكرار.
+- **201:** عنوان الإيصال ظاهر **و** زر الإرسال لم يعد موجوداً في الصفحة.
+- تنجح المجموعة مع \`yarn test\` ومع \`yarn vitest run --sequence.shuffle\`.
+
+#### ٣. الواجهة الخلفية (\`elwarsha-api\`)
+
+١. **أنشئ** \`src/modules/applications/applications.service.spec.ts\`. أنشئ الخدمة مباشرة بـ \`new ApplicationsService()\`: بدون Nest testing module وبدون قاعدة بيانات. غطِّ:
+   - الطلب الصحيح يرجع إيصالاً بمعرّف يبدأ بـ \`app_\` و \`status: "received"\`؛
+   - البريد المكرر بحالة أحرف مختلفة يُرفض بـ \`ConflictError\` (\`await expect(...).rejects.toThrow(ConflictError)\`)؛
+   - حساب GitHub المكرر ببريد مختلف يُرفض؛
+   - نفس المتقدم في دفعة مختلفة يُقبل؛
+   - \`reset()\` تمسح الحالة.
+
+٢. **HTTP:** حالات HTTP الخاصة بالتقديم تبقى في \`test/app.e2e-spec.ts\`. أضف أو عدّل حالة فقط عندما توضح مصفوفتك أن اختبار الوحدة لا يغطي الخطر.
+
+٣. أعد استخدام \`vitest.config.ts\` و \`vitest.config.e2e.ts\`. لا تضف إطار اختبار جديداً.
+
+#### ٤. اكسر السلوك عمداً
+
+في كل طرف، اختر اختباراً من مصفوفتك واكسر **كود الإنتاج** لا الاختبار. لا ترفع أي كود مكسور. في الـ PR اذكر التغيير (سطر واحد)، والتشغيل الأحمر (الأمر واسم الاختبار الفاشل)، والتشغيل الأخضر بعد استعادة الكود.
+
+- **الـ API:** احذف \`.toLowerCase()\` من \`normalizedEmail\` في \`ApplicationsService.apply\`.
+- **الواجهة:** أوقف عرض \`<span>\` الخاص بخطأ البريد في \`PersonalInfoSection.tsx\`.
+
+إذا بقي اختبارك أخضر، فهذه ملاحظة بحد ذاتها: أصلح الاختبار واذكر ذلك.
+
+#### ٥. المراجعة البشرية مقابل الذكاء الاصطناعي
+
+١. اكتب ملاحظات مراجعتك على الـ diff أولاً: ثلاث ملاحظات على الأقل.
+
+٢. شغّل مراجعاً آلياً واحداً: Cursor Agent Review أو Claude Code \`/code-review\`.
+
+٣. اجمعهما في جدول واحد: الملاحظة ← المصدر (بشري / ذكاء اصطناعي / كلاهما) ← **صحيحة / إنذار كاذب / غير مؤكدة** ← سبب في سطر واحد ← الإجراء المتخذ.
+
+#### ٦. بوابة CI
+
+أثبت أن فحص \`verify\` الأحمر يعطّل زر **Merge** في الـ PR، ثم ادفع الإصلاح الذي يعيده أخضر. الفحوصات الإلزامية تمنع **الدمج** لا **الموافقة**؛ ولهذا الموافقة وحدها ليست دليلاً.
+
+#### معيار التحقق
+
+| المستودع | الأوامر |
+| --- | --- |
+| elwarsha-web | \`yarn test\`، \`yarn vitest run --sequence.shuffle\`، \`yarn e2e\` |
+| elwarsha-api | \`yarn test\`، ثم \`yarn test:e2e\` مع تشغيل Postgres وتطبيق الـ migrations والـ seed (\`docker compose up -d && yarn prisma:deploy && yarn prisma:seed\`) |
+
+بعد التبديل بين الفروع، شغّل \`yarn prisma:generate\` قبل الاختبارات. الـ client المولّد من مخطط فرع آخر يفشل بالخطأ \`P2022\`.
+
+#### معيار إمكانية الوصول
+
+نجاح الاستعلامات بالدور والتسمية يثبت أن عناصر التحكم لها أدوار وأسماء ميسرة. واختبار 422 يثبت أيضاً أن رسالة الخطأ مرتبطة بحقلها عبر الوصف الميسر. لكن jsdom لا يثبت أن قارئ الشاشة **يعلن** أي شيء؛ اعتبر ذلك **غير مؤكد** ما لم تتحقق منه بقارئ شاشة حقيقي.
+
+#### معايير القبول
+
+- [ ] المصفوفة بالشكل المحدد أعلاه، ولكل اختبار أبقيته أو أضفته صف فيها.
+- [ ] اختبارات الواجهة تحقق كل بنود القسم ٢.
+- [ ] \`applications.service.spec.ts\` موجود ويغطي الحالات الخمس في القسم ٣.
+- [ ] كسر متعمد واحد لكل طرف، مع ذكر التشغيل الأحمر والأخضر.
+- [ ] جدول الملاحظات البشرية مقابل الذكاء الاصطناعي مكتمل، وكل ملاحظة آلية مصنفة.
+- [ ] التشغيل بترتيب عشوائي ينجح في المستودعين.
+- [ ] فحص \`verify\` أخضر على آخر commit.
+
+#### النطاق الكامل (اختياري، يرفع سقف التقييم)
+
+- **مسار التقديم في Playwright** (\`e2e/apply.spec.ts\`): افتح \`/en/apply/\`، واملأ كل الحقول بـ \`getByLabel\`، وأرسل، وتحقق من ظهور عنوان الإيصال. استبدل \`**/api/v1/cohorts/*/applications\` بـ \`page.route\`. أضف حالة ثانية ترجع 422 وتعرض خطأ الحقل. استخدم تحققات web-first فقط، بدون \`waitForTimeout\`.
+- **قفل الأسابيع بشكل حتمي:** اختبار HTTP الخاص بالأسابيع يعتمد على تاريخ اليوم. اجعله مستقلاً عن وقت التشغيل (دفعة تُزرع بتواريخ نسبية لـ \`now\`، أو ساعة تُحقن)، ثم تحقق من أسبوع مكتمل وأسبوع نشط وأسبوع مقفل.
+
+#### المسار المتقدم (اختياري)
+
+- شغّل اختبارات e2e للـ API على **قاعدة بيانات معزولة**: \`DATABASE_URL\` منفصل، أو **Testcontainers**.
+- شغّل اختبارات التحور **Stryker** على \`applications.service.ts\` واذكر الطفرات الناجية.
+- حوّل سؤال "هل مخرجات الوكيل تعمل؟" إلى حلقة تقييم قابلة للقياس.`,
     },
     resources: {
       required: [
         {
-          title: "أنماط التوزيع والتحكم في التزامن",
-          url: "https://martinfowler.com/articles/patterns-of-distributed-systems/",
-          layers: "Concept",
+          title: "Testing Library: المبادئ التوجيهية (بالإنجليزية)",
+          url: "https://testing-library.com/docs/guiding-principles",
+          layers: "Frontend",
           format: "Read",
-          time: "٢٥ دقيقة",
-          why: "فهم أنماط التزامن في الأنظمة الموزعة.",
+          time: "٥ دقائق",
+          why: "اختبار الواجهة الأمامية بالتركيز على السلوك.",
+        },
+        {
+          title: "Testing Library: عن الاستعلامات (بالإنجليزية)",
+          url: "https://testing-library.com/docs/queries/about",
+          layers: "Frontend",
+          format: "Read",
+          time: "١٥ دقيقة",
+          why: "أولوية الاستعلام بالدور والتسمية، وهي في نفس الوقت فحص لإمكانية الوصول.",
+        },
+        {
+          title: "أخطاء شائعة مع React Testing Library — Kent C. Dodds (بالإنجليزية)",
+          url: "https://kentcdodds.com/blog/common-mistakes-with-react-testing-library",
+          layers: "Frontend",
+          format: "Read",
+          time: "١٥ دقيقة",
+          why: "يشرح مشاكل الاختبارات الحالية بالضبط: fireEvent و getByText والتحقق من المعرّفات.",
+        },
+        {
+          title: "NestJS: الاختبارات (بالإنجليزية)",
+          url: "https://docs.nestjs.com/fundamentals/testing",
+          layers: "Backend",
+          format: "Read",
+          time: "٢٠ دقيقة، أجزاء مختارة",
+          why: "اختبارات الوحدة للـ providers واختبارات HTTP باستخدام supertest.",
+        },
+        {
+          title:
+            "Write tests. Not too many. Mostly integration. — Kent C. Dodds (بالإنجليزية)",
+          url: "https://www.youtube.com/watch?v=Fha2bVoC8SE",
+          layers: "Concept",
+          format: "Watch",
+          time: "١٥ دقيقة",
+          why: "النموذج الذهني للموازنة بين الثقة والتكلفة ونطاق الاختبار.",
+        },
+        {
+          title: "Cursor: Agent Review (اختر واحداً) (بالإنجليزية)",
+          url: "https://cursor.com/docs/agent/review",
+          layers: "AI",
+          format: "Read",
+          time: "١٥ دقيقة",
+          why: "مراجع آلي إضافي على الـ diff. اقرأ هذا أو صفحة Claude Code.",
+        },
+        {
+          title: "Claude Code: مراجعة الكود (اختر واحداً) (بالإنجليزية)",
+          url: "https://code.claude.com/docs/en/code-review",
+          layers: "AI",
+          format: "Read",
+          time: "١٥ دقيقة",
+          why: "أمر /code-review المحلي متاح دائماً؛ مراجعة الـ PR المستضافة تعتمد على الخطة.",
         },
       ],
-      assignment: [],
-      alternative: [],
+      assignment: [
+        {
+          title: "Testing Library: user-event (بالإنجليزية)",
+          url: "https://testing-library.com/docs/user-event/intro",
+          layers: "Frontend",
+          format: "Read",
+          time: "١٠ دقائق",
+          why: "userEvent.setup() ولماذا يحل محل fireEvent.",
+        },
+        {
+          title: "Vitest: المحاكاة Mocking (بالإنجليزية)",
+          url: "https://vitest.dev/guide/mocking",
+          layers: "Both",
+          format: "Read",
+          time: "١٠ دقائق، أجزاء مختارة",
+          why: "vi.mock و vi.fn و vi.setSystemTime، ومتى لا تستخدم المحاكاة.",
+        },
+        {
+          title: "Playwright: محاكاة الـ APIs (بالإنجليزية)",
+          url: "https://playwright.dev/docs/mock",
+          layers: "Frontend",
+          format: "Read",
+          time: "١٠ دقائق",
+          why: "page.route لمسار التقديم بدون API يعمل (النطاق الكامل).",
+        },
+        {
+          title: "Playwright: أفضل الممارسات (بالإنجليزية)",
+          url: "https://playwright.dev/docs/best-practices",
+          layers: "Frontend",
+          format: "Read",
+          time: "١٠ دقائق",
+          why: "محددات موجهة للمستخدم، وعزل الاختبارات، وبدون انتظار ثابت.",
+        },
+        {
+          title: "GitHub: إدارة قاعدة حماية الفرع (بالإنجليزية)",
+          url: "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule",
+          layers: "Delivery",
+          format: "Read",
+          time: "١٠ دقائق، أجزاء مختارة",
+          why: "ما الذي يفرضه فحص الحالة الإلزامي، وما الذي لا يفرضه.",
+        },
+        {
+          title:
+            "On the Diverse and Fantastical Shapes of Testing — Martin Fowler (بالإنجليزية)",
+          url: "https://martinfowler.com/articles/2021-test-shapes.html",
+          layers: "Concept",
+          format: "Read",
+          time: "٢٠ دقيقة",
+          why: "نطاق الاختبار والثقة والتكلفة عندما تكون المصفوفة محل نقاش.",
+        },
+        {
+          title: "Testing Implementation Details — Kent C. Dodds (بالإنجليزية)",
+          url: "https://kentcdodds.com/blog/testing-implementation-details",
+          layers: "Frontend",
+          format: "Read",
+          time: "١٥ دقيقة",
+          why: "تعزيز اختياري لمبادئ Testing Library.",
+        },
+        {
+          title: "Prisma: اختبارات التكامل (متقدم) (بالإنجليزية)",
+          url: "https://www.prisma.io/docs/orm/prisma-client/testing/integration-testing",
+          layers: "Backend",
+          format: "Read",
+          time: "٢٠ دقيقة",
+          why: "قاعدة بيانات معزولة، وزرع البيانات، والتنظيف بعد الاختبار.",
+        },
+        {
+          title: "Testcontainers لـ Node.js (متقدم) (بالإنجليزية)",
+          url: "https://node.testcontainers.org",
+          layers: "Backend",
+          format: "Read",
+          time: "٢٠ دقيقة",
+          why: "PostgreSQL مؤقت لاختبارات التكامل بدون حالة مشتركة.",
+        },
+        {
+          title: "اختبارات التحور Stryker (متقدم) (بالإنجليزية)",
+          url: "https://stryker-mutator.io",
+          layers: "Concept",
+          format: "Read",
+          time: "١٥ دقيقة",
+          why: "يكشف الاختبارات التي تنجح بينما لا تحمي أي شيء.",
+        },
+        {
+          title: "Demystifying evals for AI agents — Anthropic (متقدم) (بالإنجليزية)",
+          url: "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+          layers: "AI",
+          format: "Read",
+          time: "٣٠ دقيقة",
+          why: 'يحوّل سؤال "هل مخرجات الوكيل تعمل؟" إلى حلقة تقييم قابلة للقياس.',
+        },
+      ],
+      alternative: [
+        {
+          title:
+            "Testing in React Tutorial: Jest and React Testing Library — PedroTech (بالإنجليزية)",
+          url: "https://www.youtube.com/watch?v=JBSUgDxICg8",
+          layers: "Frontend",
+          format: "Watch",
+          time: "~٣٠ دقيقة",
+          why: "اختبارات مكونات تركز على السلوك. يستخدم Jest: اقرأ jest.fn على أنها vi.fn.",
+        },
+        {
+          title: "كورس React و Next.js و Testing Library و Jest — Index Academy",
+          url: "https://www.youtube.com/watch?v=tOoxZf3dxhQ&list=PLDQ11FgmbqQOFLSRv-Ya39CchDjP1BLju",
+          layers: "Frontend",
+          format: "Watch",
+          time: "٢–٣ حلقات",
+          why: "شرح عربي لـ Testing Library على مشروع حقيقي. شاهد حلقات اختبار النماذج فقط.",
+        },
+        {
+          title:
+            "React Testing with Playwright (Complete Tutorial) — Cosden Solutions (بالإنجليزية)",
+          url: "https://www.youtube.com/watch?v=3NW0Mz943_E",
+          layers: "Frontend",
+          format: "Watch",
+          time: "~٢٥ دقيقة",
+          why: "مسار Playwright من طرف لطرف لتطبيقات React.",
+        },
+        {
+          title: "سلسلة مقدمة Playwright — Mohamed Bakry",
+          url: "https://www.youtube.com/watch?v=afxvu3DlT2w&list=PLdQqfr7NdTfoK2FnHR-MmqSIIfGD7WV0E",
+          layers: "Frontend",
+          format: "Watch",
+          time: "سلسلة",
+          why: "مقدمة عربية لـ Playwright: المحددات وأول اختبار.",
+        },
+        {
+          title: "NestJS: الجزء ٤٣ - اختبارات الوحدة — Youssef Abbas",
+          url: "https://www.youtube.com/watch?v=lKL7i9pWOjc&list=PL5gCk5NdNx5-W_GivoyivrwGOlNnffTX4&index=43&t=2632s",
+          layers: "Backend",
+          format: "Watch",
+          time: "~٢٠ دقيقة، من ٤٣:٥٢",
+          why: "شرح عربي لاختبارات الوحدة للـ providers في NestJS.",
+        },
+        {
+          title:
+            "Software Testing Course: Playwright, E2E, and AI Agents — freeCodeCamp (بالإنجليزية)",
+          url: "https://www.youtube.com/watch?v=jydYq7oAtD8",
+          layers: "Concept",
+          format: "Watch",
+          time: "~٦٣ دقيقة، فصول مختارة",
+          why: "النموذج الذهني لاختبارات E2E وأين يدخل وكلاء الذكاء الاصطناعي في الاختبارات.",
+        },
+      ],
     },
-    reflectionQuestion: "ماذا يحدث إذا انقطع الاتصال بالعامل أثناء معالجة مهمة حيوية؟",
-    prerequisites: ["الأسبوع الخامس"],
+    reflectionQuestion:
+      "ما الذي قد يخفيه اختبار من طرف لطرف غير مستقر (flaky) ويكشفه اختبار وحدة مركّز؟",
+    prerequisites: ["الأسبوع الخامس", "Docker Compose Postgres"],
   },
   7: {
     weekNumber: 7,
